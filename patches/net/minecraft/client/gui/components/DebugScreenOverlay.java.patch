@@ -40,6 +40,18 @@
          this.renderLines(p_281261_, list, false);
      }
  
+@@ -433,6 +_,11 @@
+                 this.minecraft.getSoundManager().getDebugString()
+                     + String.format(Locale.ROOT, " (Mood %d%%)", Math.round(this.minecraft.player.getCurrentMood() * 100.0F))
+             );
++            if (net.neoforged.neoforge.client.renderer.RendererAccess.INSTANCE.hasRenderer()) {
++                list.add("[NeoForge] Active renderer: " + net.neoforged.neoforge.client.renderer.RendererAccess.INSTANCE.getRenderer().getClass().getSimpleName());
++            } else {
++                list.add("[NeoForge] Active renderer: none (vanilla)");
++            }
+             return list;
+         }
+     }
 @@ -508,6 +_,13 @@
              GlUtil.getRenderer(),
              GlUtil.getOpenGLVersion()

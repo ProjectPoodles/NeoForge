@@ -1,7 +1,22 @@
 --- a/net/minecraft/client/renderer/chunk/SectionRenderDispatcher.java
 +++ b/net/minecraft/client/renderer/chunk/SectionRenderDispatcher.java
-@@ -502,10 +_,13 @@
-         class RebuildTask extends SectionRenderDispatcher.RenderSection.CompileTask {
+@@ -348,7 +_,8 @@
+             return d0 * d0 + d1 * d1 + d2 * d2;
+         }
+ 
+-        void beginLayer(BufferBuilder p_294230_) {
++        // TODO: AT
++        public void beginLayer(BufferBuilder p_294230_) {
+             p_294230_.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK);
+         }
+ 
+@@ -499,13 +_,17 @@
+         }
+ 
+         @OnlyIn(Dist.CLIENT)
+-        class RebuildTask extends SectionRenderDispatcher.RenderSection.CompileTask {
++        // TODO: AT
++        public class RebuildTask extends SectionRenderDispatcher.RenderSection.CompileTask {
              @Nullable
              protected RenderChunkRegion region;
 +            private final net.neoforged.neoforge.client.model.data.ModelDataManager.Snapshot modelData;
@@ -14,7 +29,19 @@
              }
  
              @Override
-@@ -609,7 +_,11 @@
+@@ -584,6 +_,11 @@
+                     RandomSource randomsource = RandomSource.create();
+                     BlockRenderDispatcher blockrenderdispatcher = Minecraft.getInstance().getBlockRenderer();
+ 
++                    // hook just before iterating over the render chunk's chunks blocks, captures the used renderlayer set
++                    // accessing this.region is unsafe due to potential async cancellation, the LV has to be used!
++                    var renderer = net.neoforged.neoforge.client.indigo.renderer.render.TerrainRenderContext.POOL.get();
++                    renderer.prepare(renderchunkregion, RenderSection.this, sectionrenderdispatcher$rendersection$rebuildtask$compileresults, p_294319_, set);
++
+                     for(BlockPos blockpos2 : BlockPos.betweenClosed(blockpos, blockpos1)) {
+                         BlockState blockstate = renderchunkregion.getBlockState(blockpos2);
+                         if (blockstate.isSolidRender(renderchunkregion, blockpos2)) {
+@@ -609,7 +_,19 @@
                          }
  
                          if (blockstate.getRenderShape() != RenderShape.INVISIBLE) {
@@ -23,11 +50,19 @@
 +                            var modelData = this.modelData.getAtOrEmpty(blockpos2);
 +                            modelData = model.getModelData(renderchunkregion, blockpos2, blockstate, modelData);
 +                            randomsource.setSeed(blockstate.getSeed(blockpos2));
++                            if (blockstate.getRenderShape() == RenderShape.MODEL && (net.neoforged.neoforge.client.indigo.Indigo.ALWAYS_TESSELATE_INDIGO || !model.isVanillaAdapter())) {
++                                // TODO POODLES: not the best way to write this patch...
++                                posestack.pushPose();
++                                posestack.translate((float)(blockpos2.getX() & 15), (float)(blockpos2.getY() & 15), (float)(blockpos2.getZ() & 15));
++                                // Replace the vanilla renderBatched call by our terrain rendering hook
++                                renderer.tessellateBlock(blockstate, blockpos2, model, posestack);
++                                posestack.popPose();
++                            } else {
 +                            for (RenderType rendertype2 : model.getRenderTypes(blockstate, randomsource, modelData)) {
                              BufferBuilder bufferbuilder2 = p_294319_.builder(rendertype2);
                              if (set.add(rendertype2)) {
                                  RenderSection.this.beginLayer(bufferbuilder2);
-@@ -617,8 +_,9 @@
+@@ -617,8 +_,10 @@
  
                              posestack.pushPose();
                              posestack.translate((float)(blockpos2.getX() & 15), (float)(blockpos2.getY() & 15), (float)(blockpos2.getZ() & 15));
@@ -35,9 +70,18 @@
 +                            blockrenderdispatcher.renderBatched(blockstate, blockpos2, renderchunkregion, posestack, bufferbuilder2, true, randomsource, modelData, rendertype2);
                              posestack.popPose();
 +                            }
++                            }
                          }
                      }
  
+@@ -642,6 +_,7 @@
+                     }
+ 
+                     ModelBlockRenderer.clearCache();
++                    renderer.release();
+                 }
+ 
+                 sectionrenderdispatcher$rendersection$rebuildtask$compileresults.visibilitySet = visgraph.resolve();
 @@ -651,9 +_,10 @@
              private <E extends BlockEntity> void handleBlockEntity(SectionRenderDispatcher.RenderSection.RebuildTask.CompileResults p_294198_, E p_296214_) {
                  BlockEntityRenderer<E> blockentityrenderer = Minecraft.getInstance().getBlockEntityRenderDispatcher().getRenderer(p_296214_);
@@ -50,3 +94,13 @@
                      }
                  }
              }
+@@ -667,7 +_,8 @@
+             }
+ 
+             @OnlyIn(Dist.CLIENT)
+-            static final class CompileResults {
++            // TODO: AT
++            public static final class CompileResults {
+                 public final List<BlockEntity> globalBlockEntities = new ArrayList<>();
+                 public final List<BlockEntity> blockEntities = new ArrayList<>();
+                 public final Map<RenderType, BufferBuilder.RenderedBuffer> renderedLayers = new Reference2ObjectArrayMap<>();

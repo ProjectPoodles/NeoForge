@@ -9,11 +9,12 @@
      private final List<Pair<Predicate<BlockState>, BakedModel>> selectors;
      protected final boolean hasAmbientOcclusion;
      protected final boolean isGui3d;
-@@ -29,10 +_,12 @@
+@@ -29,23 +_,23 @@
      protected final ItemTransforms transforms;
      protected final ItemOverrides overrides;
      private final Map<BlockState, BitSet> selectorCache = new Reference2ObjectOpenHashMap<>();
 +    private final BakedModel defaultModel;
++    private final boolean isVanillaAdapter;
  
      public MultiPartBakedModel(List<Pair<Predicate<BlockState>, BakedModel>> p_119462_) {
          this.selectors = p_119462_;
@@ -22,8 +23,10 @@
          this.hasAmbientOcclusion = bakedmodel.useAmbientOcclusion();
          this.isGui3d = bakedmodel.isGui3d();
          this.usesBlockLight = bakedmodel.usesBlockLight();
-@@ -41,11 +_,7 @@
+         this.particleIcon = bakedmodel.getParticleIcon();
+         this.transforms = bakedmodel.getTransforms();
          this.overrides = bakedmodel.getOverrides();
++        this.isVanillaAdapter = this.selectors.stream().allMatch(x -> x.getRight().isVanillaAdapter());
      }
  
 -    @Override
@@ -89,7 +92,7 @@
      public boolean isGui3d() {
          return this.isGui3d;
      }
-@@ -94,13 +_,35 @@
+@@ -94,18 +_,78 @@
      }
  
      @Override
@@ -107,9 +110,9 @@
 +    @Override
      public ItemTransforms getTransforms() {
          return this.transforms;
-+    }
-+
-+    @Override
+     }
+ 
+     @Override
 +    public BakedModel applyTransform(net.minecraft.world.item.ItemDisplayContext transformType, com.mojang.blaze3d.vertex.PoseStack poseStack, boolean applyLeftHandTransform) {
 +        return this.defaultModel.applyTransform(transformType, poseStack, applyLeftHandTransform);
 +    }
@@ -122,6 +125,49 @@
 +            if (selectors.get(i))
 +                renderTypeSets.add(this.selectors.get(i).getRight().getRenderTypes(state, rand, data));
 +        return net.neoforged.neoforge.client.ChunkRenderTypeSet.union(renderTypeSets);
++    }
++
++    @Override
+     public ItemOverrides getOverrides() {
+         return this.overrides;
++    }
++
++    @Override
++    public boolean isVanillaAdapter() {
++        return isVanillaAdapter;
++    }
++
++    @Override
++    public void emitBlockQuads(net.minecraft.world.level.BlockAndTintGetter blockView, BlockState state, net.minecraft.core.BlockPos pos, java.util.function.Supplier<RandomSource> randomSupplier, net.neoforged.neoforge.client.renderer.render.RenderContext context) {
++        BitSet bitSet = this.selectorCache.get(state);
++
++        if (bitSet == null) {
++            bitSet = new BitSet();
++
++            for (int i = 0; i < this.selectors.size(); i++) {
++                Pair<Predicate<BlockState>, BakedModel> pair = selectors.get(i);
++
++                if (pair.getLeft().test(state)) {
++                    bitSet.set(i);
++                }
++            }
++
++            selectorCache.put(state, bitSet);
++        }
++
++        RandomSource random = randomSupplier.get();
++        // Imitate vanilla passing a new random to the submodels
++        long randomSeed = random.nextLong();
++        java.util.function.Supplier<RandomSource> subModelRandomSupplier = () -> {
++            random.setSeed(randomSeed);
++            return random;
++        };
++
++        for (int i = 0; i < this.selectors.size(); i++) {
++            if (bitSet.get(i)) {
++                selectors.get(i).getRight().emitBlockQuads(blockView, state, pos, subModelRandomSupplier, context);
++            }
++        }
      }
  
-     @Override
+     @OnlyIn(Dist.CLIENT)

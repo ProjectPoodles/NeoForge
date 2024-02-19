@@ -1,6 +1,6 @@
 --- a/net/minecraft/client/resources/model/WeightedBakedModel.java
 +++ b/net/minecraft/client/resources/model/WeightedBakedModel.java
-@@ -17,7 +_,7 @@
+@@ -17,21 +_,24 @@
  import net.neoforged.api.distmarker.OnlyIn;
  
  @OnlyIn(Dist.CLIENT)
@@ -9,7 +9,13 @@
      private final int totalWeight;
      private final List<WeightedEntry.Wrapper<BakedModel>> list;
      private final BakedModel wrapped;
-@@ -29,9 +_,10 @@
++    private final boolean isVanillaAdapter;
+ 
+     public WeightedBakedModel(List<WeightedEntry.Wrapper<BakedModel>> p_119544_) {
+         this.list = p_119544_;
+         this.totalWeight = WeightedRandom.getTotalWeight(p_119544_);
+         this.wrapped = p_119544_.get(0).getData();
++        this.isVanillaAdapter = this.list.stream().allMatch(x -> x.getData().isVanillaAdapter());
      }
  
      @Override
@@ -39,7 +45,7 @@
      public boolean isGui3d() {
          return this.wrapped.isGui3d();
      }
-@@ -61,8 +_,25 @@
+@@ -61,13 +_,61 @@
      }
  
      @Override
@@ -50,9 +56,9 @@
 +    @Override
      public ItemTransforms getTransforms() {
          return this.wrapped.getTransforms();
-+    }
-+
-+    @Override
+     }
+ 
+     @Override
 +    public BakedModel applyTransform(net.minecraft.world.item.ItemDisplayContext transformType, com.mojang.blaze3d.vertex.PoseStack poseStack, boolean applyLeftHandTransform) {
 +        return this.wrapped.applyTransform(transformType, poseStack, applyLeftHandTransform);
 +    }
@@ -62,6 +68,42 @@
 +        return WeightedRandom.getWeightedItem(this.list, Math.abs((int)rand.nextLong()) % this.totalWeight)
 +                  .map((p_235065_) -> p_235065_.getData().getRenderTypes(state, rand, data))
 +                  .orElse(net.neoforged.neoforge.client.ChunkRenderTypeSet.none());
++    }
++
++    @Override
+     public ItemOverrides getOverrides() {
+         return this.wrapped.getOverrides();
++    }
++
++    @Override
++    public boolean isVanillaAdapter() {
++        return isVanillaAdapter;
++    }
++
++    @Override
++    public void emitBlockQuads(net.minecraft.world.level.BlockAndTintGetter blockView, BlockState state, net.minecraft.core.BlockPos pos, java.util.function.Supplier<RandomSource> randomSupplier, net.neoforged.neoforge.client.renderer.render.RenderContext context) {
++        var selected = WeightedRandom.getWeightedItem(this.list, Math.abs((int) randomSupplier.get().nextLong()) % this.totalWeight).orElse(null);
++
++        if (selected != null) {
++            selected.getData().emitBlockQuads(blockView, state, pos, () -> {
++                RandomSource random = randomSupplier.get();
++                random.nextLong(); // Imitate vanilla modifying the random before passing it to the submodel
++                return random;
++            }, context);
++        }
++    }
++
++    @Override
++    public void emitItemQuads(net.minecraft.world.item.ItemStack stack, java.util.function.Supplier<RandomSource> randomSupplier, net.neoforged.neoforge.client.renderer.render.RenderContext context) {
++        var selected = WeightedRandom.getWeightedItem(this.list, Math.abs((int) randomSupplier.get().nextLong()) % this.totalWeight).orElse(null);
++
++        if (selected != null) {
++            selected.getData().emitItemQuads(stack, () -> {
++                RandomSource random = randomSupplier.get();
++                random.nextLong(); // Imitate vanilla modifying the random before passing it to the submodel
++                return random;
++            }, context);
++        }
      }
  
-     @Override
+     @OnlyIn(Dist.CLIENT)

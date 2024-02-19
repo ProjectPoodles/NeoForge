@@ -5,7 +5,7 @@
  
  @OnlyIn(Dist.CLIENT)
 -public interface BakedModel {
-+public interface BakedModel extends net.neoforged.neoforge.client.extensions.IBakedModelExtension {
++public interface BakedModel extends net.neoforged.neoforge.client.extensions.IBakedModelExtension, net.neoforged.neoforge.client.renderer.model.FabricBakedModel {
 +    /**@deprecated Forge: Use {@link #getQuads(BlockState, Direction, RandomSource, net.neoforged.neoforge.client.model.data.ModelData, net.minecraft.client.renderer.RenderType)}*/
 +    @Deprecated
      List<BakedQuad> getQuads(@Nullable BlockState p_235039_, @Nullable Direction p_235040_, RandomSource p_235041_);

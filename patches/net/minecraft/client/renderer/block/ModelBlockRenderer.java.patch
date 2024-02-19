@@ -1,5 +1,13 @@
 --- a/net/minecraft/client/renderer/block/ModelBlockRenderer.java
 +++ b/net/minecraft/client/renderer/block/ModelBlockRenderer.java
+@@ -27,6 +_,7 @@
+ import net.neoforged.api.distmarker.Dist;
+ import net.neoforged.api.distmarker.OnlyIn;
+ 
++// TODO POODLES: needs BlockRenderContext injection
+ @OnlyIn(Dist.CLIENT)
+ public class ModelBlockRenderer {
+     private static final int FACE_CUBIC = 0;
 @@ -40,6 +_,7 @@
          this.blockColors = p_110999_;
      }
@@ -147,6 +155,16 @@
              p_111021_.calculate(p_111013_, p_111014_, p_111015_, bakedquad.getDirection(), p_111019_, p_111020_, bakedquad.isShade());
              this.putQuadData(
                  p_111013_,
+@@ -223,7 +_,8 @@
+         );
+     }
+ 
+-    private void calculateShape(
++    // TODO: AT
++    public void calculateShape(
+         BlockAndTintGetter p_111040_,
+         BlockState p_111041_,
+         BlockPos p_111042_,
 @@ -322,6 +_,7 @@
          }
      }
@@ -190,3 +208,19 @@
      }
  
      private static void renderQuadList(
+@@ -692,9 +_,12 @@
+     }
+ 
+     @OnlyIn(Dist.CLIENT)
+-    static class AmbientOcclusionFace {
+-        final float[] brightness = new float[4];
+-        final int[] lightmap = new int[4];
++    // TODO: AT
++    public static class AmbientOcclusionFace {
++        // TODO: AT
++        public final float[] brightness = new float[4];
++        // TODO: AT
++        public final int[] lightmap = new int[4];
+ 
+         public AmbientOcclusionFace() {
+         }

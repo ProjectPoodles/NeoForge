@@ -1,6 +1,11 @@
 --- a/net/minecraft/client/renderer/entity/ItemRenderer.java
 +++ b/net/minecraft/client/renderer/entity/ItemRenderer.java
-@@ -67,7 +_,7 @@
+@@ -63,11 +_,12 @@
+     private final TextureManager textureManager;
+     private final ItemColors itemColors;
+     private final BlockEntityWithoutLevelRenderer blockEntityRenderer;
++    private final ThreadLocal<net.neoforged.neoforge.client.indigo.renderer.render.ItemRenderContext> renderContexts;
+ 
      public ItemRenderer(Minecraft p_266926_, TextureManager p_266774_, ModelManager p_266850_, ItemColors p_267016_, BlockEntityWithoutLevelRenderer p_267049_) {
          this.minecraft = p_266926_;
          this.textureManager = p_266774_;
@@ -9,15 +14,29 @@
          this.blockEntityRenderer = p_267049_;
  
          for(Item item : BuiltInRegistries.ITEM) {
-@@ -117,7 +_,7 @@
+@@ -77,6 +_,7 @@
+         }
+ 
+         this.itemColors = p_267016_;
++        this.renderContexts = ThreadLocal.withInitial(() -> new net.neoforged.neoforge.client.indigo.renderer.render.ItemRenderContext(itemColors));
+     }
+ 
+     public ItemModelShaper getItemModelShaper() {
+@@ -117,8 +_,13 @@
                  }
              }
  
 -            p_115151_.getTransforms().getTransform(p_270188_).apply(p_115146_, p_115147_);
 +            p_115151_ = net.neoforged.neoforge.client.ClientHooks.handleCameraTransforms(p_115147_, p_115151_, p_270188_, p_115146_);
              p_115147_.translate(-0.5F, -0.5F, -0.5F);
++
++            if (!p_115151_.isVanillaAdapter()) {
++                // TODO: getRenderPasses support
++                renderContexts.get().renderModel(p_115144_, p_270188_, p_115146_, p_115147_, p_115148_, p_115149_, p_115150_, p_115151_);
++            } else
              if (!p_115151_.isCustomRenderer() && (!p_115144_.is(Items.TRIDENT) || flag)) {
                  boolean flag1;
+                 if (p_270188_ != ItemDisplayContext.GUI && !p_270188_.firstPerson() && p_115144_.getItem() instanceof BlockItem) {
 @@ -127,8 +_,8 @@
                  } else {
                      flag1 = true;
